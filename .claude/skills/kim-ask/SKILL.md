@@ -1,13 +1,13 @@
 ---
-name: kim-1-ask
+name: kim-ask
 description: kim-1 vault 그래프를 탐색해 답을 얻는 조회 스킬. 키워드/노드로 관련 서브그래프(유사 노드 + 이웃/경로)를 찾는다. 트리거 - "조회", "recall", "이웃", "관련 노드 찾기", "vault에서 찾아줘", "그래프 탐색".
 ---
 
-# kim-1-ask — 그래프 조회
+# kim-ask — 그래프 조회
 
 `scripts/kim.mjs`로 `vault/`의 마크다운 그래프를 **탐색해 답을 얻는다**. 이 스킬은 얇은
 오케스트레이터이고, 실제 그래프 연산은 `kim.mjs`가 결정적으로 보증한다. **읽기 전용** —
-vault를 바꾸지 않는다(추가는 [[kim-1-learn]], 정제는 [[kim-1-clean]]).
+vault를 바꾸지 않는다(추가는 [[kim-learn]], 정제는 [[kim-clean]]).
 
 ## 조회 워크플로
 

@@ -1,13 +1,13 @@
 ---
-name: kim-1-learn
+name: kim-learn
 description: 원자료(텍스트·대화·파일)를 kim-1 vault의 infinite-brain 타입 노드+엣지 마크다운으로 증류하는 그래프-인지 캡처 스킬. 추가 전에 그래프를 조회해 중복을 피하고 연결처를 찾는다. 트리거 - "지식 추가", "이거 기억해", "vault에 넣어줘", "노드로 만들어", "증류해줘".
 ---
 
-# kim-1-learn — 그래프-인지 캡처(증류)
+# kim-learn — 그래프-인지 캡처(증류)
 
 원자료를 노드+엣지로 **증류**해 `vault/`의 마크다운으로 반영한다. 핵심은 **추가하기 전에
 그래프를 먼저 조회**해 고아·중복을 만들지 않는 것이다. 결정적 조회는 `scripts/kim.mjs`가,
-검증은 `scripts/build-payloads.mjs`가 보증한다. 조회는 [[kim-1-ask]], 투영은 [[kim-1-sync]].
+검증은 `scripts/build-payloads.mjs`가 보증한다. 조회는 [[kim-ask]], 투영은 [[kim-sync]].
 
 ## 데이터 규약 (infinite-brain 스키마)
 
@@ -39,7 +39,7 @@ description: 원자료(텍스트·대화·파일)를 kim-1 vault의 infinite-bra
    node scripts/build-payloads.mjs /tmp/pv   # 위반(중복 no/id, 고아 엣지, 불변성) 0이어야 정상
    node scripts/kim.mjs health               # 고아/저신뢰/끊긴 엣지 점검
    ```
-   그 뒤 [[kim-1-sync]]로 Drive에 투영.
+   그 뒤 [[kim-sync]]로 Drive에 투영.
 
 ## 출처 추적 (provenance)
 캡처 단위마다 `source` 타입 노드 1개를 만들고(어디서 온 지식인지), 새 노드들을 거기에 `derived_from`으로 잇는다. 나중에 "이 지식 어디서 왔지?"를 그래프로 추적한다.

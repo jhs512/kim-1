@@ -4,7 +4,7 @@
 // Node name = kim-1_{no}_{namespace}_{doctype}_{visibility}_{title}, where doctype
 // is the plural folder name of the node `type` (infinite-brain: type singular, folder plural).
 
-const STORE = "kim-1";
+import { STORE } from "./config.mjs";
 
 // infinite-brain node type (singular) → folder name (plural). See docs/infinite-brain/NODE-TYPES.md.
 const TYPE_FOLDER = {

@@ -10,13 +10,14 @@ cd "$(dirname "$0")/.."
 
 GWS=/c/Users/jangk/bin/gws
 SYNC_DIR=.sync; mkdir -p "$SYNC_DIR"
-CAL_NAME="kim-1-calendar"
+# 캘린더명은 스토어에서 도출: {store}-calendar (kim.config.json, 기본 kim-1)
+CAL_NAME="$(node -e 'try{process.stdout.write((JSON.parse(require("fs").readFileSync("kim.config.json","utf8")).store||"kim-1")+"-calendar")}catch(e){process.stdout.write("kim-1-calendar")}')"
 jget() { grep -v -i keyring | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{try{console.log(eval(process.argv[1]))}catch(e){console.log("")}})' "$1"; }
 
 cal_id() {
   if [ -f "$SYNC_DIR/calendar-id" ] && [ -s "$SYNC_DIR/calendar-id" ]; then cat "$SYNC_DIR/calendar-id"; return; fi
   local id
-  id=$("$GWS" calendar calendarList list --format json 2>/dev/null | jget '(JSON.parse(d).items||[]).filter(c=>c.summary==="kim-1-calendar").map(c=>c.id)[0]||""')
+  id=$("$GWS" calendar calendarList list --format json 2>/dev/null | grep -v -i keyring | CAL="$CAL_NAME" node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>{console.log((JSON.parse(d).items||[]).filter(c=>c.summary===process.env.CAL).map(c=>c.id)[0]||"")})')
   [ -z "$id" ] && id=$("$GWS" calendar calendars insert --json "{\"summary\":\"$CAL_NAME\"}" --format json 2>/dev/null | jget 'JSON.parse(d).id||""')
   printf '%s' "$id" > "$SYNC_DIR/calendar-id"
   echo "$id"
