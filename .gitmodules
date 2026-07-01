@@ -1,0 +1,3 @@
+[submodule "kim"]
+	path = kim
+	url = https://github.com/jhs512/kim.git
