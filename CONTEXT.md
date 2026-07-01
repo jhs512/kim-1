@@ -5,12 +5,20 @@ kim-1 is a personal knowledge assistant instance: an atomic typed-markdown knowl
 ## Language
 
 **Vault**:
-The atomic typed-markdown knowledge graph — each node a small markdown file with typed frontmatter, connected by typed edges. Borrows the infinite-brain *structure* only; the Obsidian app is out of scope. The **source of truth**.
+The atomic typed-markdown knowledge graph — each node a small markdown file with typed frontmatter, connected by typed edges. Vault nodes **are** infinite-brain nodes (same frontmatter/type/edge/visibility schema); kim-1 only adds a projection layer. The Obsidian app is out of scope. The **source of truth**. See `docs/infinite-brain/`.
 _Avoid_: notes, Obsidian vault, database
 
 **Node**:
-One atomic markdown file, of one typed kind (concept, fact, decision, event, source, …). Knowledge is decomposed into nodes, never stored as long documents.
+One atomic markdown file — a full infinite-brain node (frontmatter fields `id, title, type, namespace, visibility, summary, tags, edges, confidence, …` per `docs/infinite-brain/FRONTMATTER-SCHEMA.md`) plus kim-1's `no`. Knowledge is decomposed into nodes, never stored as long documents.
 _Avoid_: note, document, page
+
+**Node type**:
+The node's kind — exactly one of the 17 infinite-brain types (`concept`, `fact`, `decision`, `event`, `source`, `hypothesis`, `pattern`, `pillar`, `question`, `playbook`, `task`, `bookmark`, `note`, `contact`, `reference`, `custom`, `log`). Frontmatter field `type` is **singular** (`concept`); the **doctype** is its plural folder name (`concepts`) used in the folder path and document name.
+_Avoid_: kind, category, namespace (namespace is now the domain partition)
+
+**Edge**:
+A directed typed link in a node's `edges`, as an infinite-brain object `{target, type, weight, note}` — `target` is the destination node `id`, `type` is one of the 10 edge types (`related_to`, `depends_on`, `derived_from`, `contradicts`, `supports`, `part_of`, `preceded_by`, `followed_by`, `authored_by`, `tagged_with`). At projection time `target` (an `id`) resolves to the target's full document name (ADR-0002).
+_Avoid_: link, rel, relation
 
 **Derived repo**:
 This `kim-1` git repository — an instance derived from the `kim` product. Git is only versioned local storage for the vault; it runs no GitHub Actions and no remote automation.
@@ -25,7 +33,7 @@ The Google Spreadsheet projection of **one** node — a strict **1:1** with the 
 _Avoid_: graph sheet, mirror, aggregate, export
 
 **Document naming convention**:
-Because Gemini Live ignores which Drive folder a sheet lives in, targeting is encoded in the document *name*: `{store}_{no}_{visibility}_{namespace}_{title}` (e.g. `kim-1_7_private_concepts_...`). This is how "only kim-1 knowledge" is selected among all of a person's Google docs. Sheets are also organized on disk as `kim-1/{namespace}/{document}` — folders are for **human browsing only**, never for targeting.
+Because Gemini Live ignores which Drive folder a sheet lives in, targeting is encoded in the document *name*: `{store}_{no}_{namespace}_{doctype}_{visibility}_{title}` (e.g. `kim-1_1_personal_concepts_public_복리`). This is how "only kim-1 knowledge" is selected among all of a person's Google docs. Sheets are also filed on disk as `kim-1/{namespace}/{doctype}/{document}` — folders are for **human browsing only**, never for targeting.
 _Avoid_: path targeting, folder targeting
 
 **id**:
@@ -37,12 +45,12 @@ kim-1's own sequential number for a node — **globally unique within the store,
 _Avoid_: id, index, docNumber
 
 **Namespace**:
-A node-type partition of the store, taken from the infinite-brain folders (`concepts`, `facts`, `decisions`, `events`, `sources`, `hypotheses`, `patterns`, `playbooks`, `pillars`, `questions`, `contacts`, `references`, `bookmarks`, `logs`, `notes`, `tasks`, `custom`, …). A default set ships; new namespaces can be added. The graph sheet is partitioned into documents by namespace.
-_Avoid_: category, tag, folder (the folder IS the namespace, but the concept is the type)
+The **project / team / domain** partition of the store (infinite-brain sense) — kebab-case, e.g. `personal`, `product-ops`, `growth`. The top folder level under the store (`kim-1/{namespace}/…`) and the first name slot after `no`. Distinct from **node type**: a namespace groups by domain, a type groups by kind. Enables scoped filtering.
+_Avoid_: node type, doctype, category, folder-as-type
 
 **Visibility**:
-A per-node public/private flag (the "access modifier") carried in both filenames. **Immutable once set** — chosen so it never breaks the full document names embedded in edges.
-_Avoid_: access control, permission
+A per-node access modifier — one of the 4 infinite-brain values `public`, `namespace`, `private`, `system` (default `namespace`), controlling when an agent may use the node. Carried in frontmatter and the document name. **Immutable once set** — so it never breaks the full document names embedded in edges.
+_Avoid_: access control, permission, public/private-only
 
 **Phone Gemini**:
 The phone-side Gemini (incl. Gemini Live). A read-only **consumer** that reads individual node sheets by name and follows edges to traverse — it does not produce or edit knowledge (kim-1 is not bidirectional).

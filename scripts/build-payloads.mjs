@@ -9,7 +9,7 @@ import { parseNode } from "./lib/parse-node.mjs";
 import { validateVault } from "./lib/validate-vault.mjs";
 import { buildIndex, resolveEdges } from "./lib/resolve-edges.mjs";
 import { buildValues } from "./lib/build-values.mjs";
-import { docName } from "./lib/doc-name.mjs";
+import { docName, doctypeOf } from "./lib/doc-name.mjs";
 
 const ROOT = process.cwd();
 const VAULT = join(ROOT, "vault");
@@ -59,7 +59,7 @@ for (const n of nodes) {
     fields: "files(id,name)",
   }));
   writeFileSync(`${base}.values.json`, JSON.stringify({ values }));
-  plan.push([n.no, name, n.id, n.visibility, n.namespace, base].join("\t"));
+  plan.push([n.no, name, n.id, n.visibility, n.namespace, doctypeOf(n.type), base].join("\t"));
 }
 writeFileSync(join(OUT, "plan.tsv"), plan.join("\n") + "\n");
 console.log(`✔ ${nodes.length} nodes validated → payloads in ${OUT}`);

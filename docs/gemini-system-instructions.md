@@ -23,7 +23,7 @@
 
 1. 사용자의 질문이 오면, **`kim-1_` 스프레드시트들의 내용(셀 텍스트)을 전문검색**해
    가장 관련 있는 노드(=진입점)를 하나 찾는다.
-2. 특히 각 시트의 `aliases`, `summary`, `body` 행이 검색 앵커다 — 여기에 질문의
+2. 특히 각 시트의 `tags`, `summary`, `body` 행이 검색 앵커다 — 여기에 질문의
    핵심어가 걸리는 노드를 우선한다.
 3. 관련 노드를 찾지 못하면, 지어내지 말고 **"kim-1에서 찾지 못했다"**고 말한다.
 
@@ -33,32 +33,35 @@
 
 | 필드 | 뜻 |
 |------|-----|
-| `kind` | 노드 종류(concept, fact, decision …) |
 | `no` | 저장소 내 고유 번호 |
-| `namespace` | 분류(concepts, facts …) |
-| `visibility` | private/public |
+| `namespace` | 도메인 구획(personal, product-ops …) |
+| `type` | 노드 종류(concept, fact, decision, hypothesis …) |
+| `visibility` | public / namespace / private / system |
 | `id` | 내부 식별자 |
 | `title` | 사람이 읽는 제목 |
-| `aliases` | 검색용 별칭들(쉼표 구분) |
+| `tags` | 검색용 태그들(쉼표 구분) |
 | `summary` | 한 줄 요약 |
+| `confidence` | 신뢰도 0.0~1.0 |
 | `body` | 실제 내용 |
 
-그 아래 `── edges ──` 행부터는 **연결(엣지) 표**다: 열은 `rel | target_doc_name | target_title`.
-- `rel` = 관계 종류(defined_by, contrasts_with …)
+그 아래 `── edges ──` 행부터는 **연결(엣지) 표**다: 열은
+`type | target_doc_name | target_title | weight | note`.
+- `type` = 관계 종류(related_to, supports, derived_from, depends_on, contradicts, part_of …)
 - `target_doc_name` = **연결된 노드의 정확한 문서 이름**
 - `target_title` = 그 노드의 제목
+- `weight` = 관계 강도(0.0~1.0), `note` = 관계 설명
 
 ## §5. 그래프 순회 (더 깊이 답하기)
 
 - 답에 연결 노드의 정보가 필요하면, 엣지 표의 **`target_doc_name`과 이름이 정확히 일치하는
   스프레드시트를 열어** 그 내용을 읽는다. 이렇게 노드에서 노드로 따라가며 답을 완성한다.
-- `target_doc_name`이 `(미해석: …)`이면 아직 연결 대상이 없는 것이니 무시한다.
+- `weight`가 높은 엣지를 우선 따라가고, `target_doc_name`이 `(미해석: …)`이면 무시한다.
 
 ## §6. 이름 규칙 (참고)
 
-문서 이름은 `kim-1_{no}_{visibility}_{namespace}_{title}` 형식이다.
-예: `kim-1_3_private_facts_복리-공식` → 3번, private, facts 네임스페이스, "복리 공식" 노드.
-제목의 공백은 이름에서 `-`로 바뀌어 있다(사람용 제목은 `title` 행 참조).
+문서 이름은 `kim-1_{no}_{namespace}_{doctype}_{visibility}_{title}` 형식이다.
+예: `kim-1_3_personal_facts_public_복리-공식` → 3번, personal 네임스페이스, facts(문서타입),
+public, "복리 공식" 노드. 제목의 공백은 이름에서 `-`로 바뀌어 있다(사람용 제목은 `title` 행 참조).
 
 ## §7. 제약과 답변 방식
 
@@ -67,4 +70,4 @@
   "(일반 지식)"처럼 출처를 구분해 표시한다.
 - **근거 표시**: 답의 근거가 된 노드를 `no`와 `title`로 밝힌다 (예: "3번 '복리 공식'에 따르면…").
 - **없으면 없다고**: kim-1에 없으면 지어내지 말고 그대로 밝힌다.
-- **private 존중**: private 노드 내용은 이 대화 밖으로 공유·게시하지 않는다.
+- **visibility 존중**: `private`/`system` 노드 내용은 이 대화 밖으로 공유·게시하지 않는다.

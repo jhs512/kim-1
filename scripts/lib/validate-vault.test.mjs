@@ -4,7 +4,7 @@ import { validateVault } from "./validate-vault.mjs";
 
 const N = (over) => ({ id: "a", no: 1, namespace: "concepts", visibility: "private", title: "t", edges: [], ...over });
 const clean = [
-  N({ id: "a", no: 1, edges: [{ rel: "r", to: "b" }] }),
+  N({ id: "a", no: 1, edges: [{ target: "b", type: "related_to" }] }),
   N({ id: "b", no: 2 }),
 ];
 
@@ -23,7 +23,7 @@ test("duplicate id is reported", () => {
 });
 
 test("orphan edge (target id not in vault) is reported with source and target", () => {
-  const v = validateVault([N({ id: "a", no: 1, edges: [{ rel: "r", to: "ghost" }] })]);
+  const v = validateVault([N({ id: "a", no: 1, edges: [{ target: "ghost", type: "related_to" }] })]);
   const o = v.find((x) => x.type === "orphan-edge");
   assert.ok(o && o.from === "a" && o.to === "ghost");
 });
@@ -42,7 +42,7 @@ test("immutable violation: no changed vs previous manifest", () => {
 
 test("reports all problems at once, not just the first", () => {
   const v = validateVault([
-    N({ id: "a", no: 1, edges: [{ rel: "r", to: "ghost" }] }),
+    N({ id: "a", no: 1, edges: [{ target: "ghost", type: "related_to" }] }),
     N({ id: "a", no: 1 }),
   ]);
   const types = new Set(v.map((x) => x.type));

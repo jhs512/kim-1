@@ -1,4 +1,5 @@
-// Resolve edges (id → full document name) at projection time. Pure. (issue 03, ADR-0002)
+// Resolve edges (target id → full document name) at projection time. Pure. (issue 03, ADR-0002)
+// Edges are infinite-brain objects {target, type, weight, note}.
 
 import { docName } from "./doc-name.mjs";
 
@@ -12,10 +13,10 @@ export function buildIndex(nodes) {
 }
 
 export function resolveEdges(node, { idToName, idToTitle }) {
-  return (node.edges || []).map(({ rel, to }) => {
-    const targetName = idToName[to];
+  return (node.edges || []).map((e) => {
+    const targetName = idToName[e.target];
     return targetName
-      ? { rel, targetName, targetTitle: idToTitle[to], resolved: true }
-      : { rel, targetName: `(미해석: ${to})`, targetTitle: "", resolved: false };
+      ? { type: e.type, weight: e.weight, note: e.note, targetName, targetTitle: idToTitle[e.target], resolved: true }
+      : { type: e.type, weight: e.weight, note: e.note, targetName: `(미해석: ${e.target})`, targetTitle: "", resolved: false };
   });
 }

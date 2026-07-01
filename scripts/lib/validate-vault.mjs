@@ -18,7 +18,7 @@ export function validateVault(nodes, prevManifest = null) {
   const known = new Set(nodes.map((n) => n.id));
   for (const n of nodes) {
     for (const e of n.edges || []) {
-      if (!known.has(e.to)) v.push({ type: "orphan-edge", from: n.id, to: e.to, message: `${n.id} → unknown ${e.to}` });
+      if (!known.has(e.target)) v.push({ type: "orphan-edge", from: n.id, to: e.target, message: `${n.id} → unknown ${e.target}` });
     }
   }
 
