@@ -1,18 +1,19 @@
-// kim.mjs — kim-1 vault graph CLI (deterministic engine for kim-1-ask/check/clean).
-// Reads the markdown vault; read-only. Usage:
-//   node scripts/kim.mjs list
-//   node scripts/kim.mjs search <질의>
-//   node scripts/kim.mjs node <id>
-//   node scripts/kim.mjs neighbors <id> [--depth N]
-//   node scripts/kim.mjs health
+// kim.mjs — kim-1 vault graph CLI backed by a SQLite index (node:sqlite).
+// Markdown is the source of truth; .kim/graph.db is a disposable derived index,
+// auto-rebuilt when the vault is newer. Read-only over knowledge. Usage:
+//   node scripts/kim.mjs build                       # (re)compile vault → .kim/graph.db
+//   node scripts/kim.mjs list | search <질의> | node <id> | neighbors <id> [--depth N] | health
 
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync, readdirSync, statSync, existsSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
+import { DatabaseSync } from "node:sqlite";
 import { parseNode } from "./lib/parse-node.mjs";
-import { searchNodes, neighbors, health } from "./lib/graph.mjs";
+import { buildDb, search, neighbors, health } from "./lib/db.mjs";
 import { docName } from "./lib/doc-name.mjs";
 
-const VAULT = join(process.cwd(), "vault");
+const ROOT = process.cwd();
+const VAULT = join(ROOT, "vault");
+const DB = join(ROOT, ".kim", "graph.db");
 
 function walk(dir) {
   const out = [];
@@ -24,47 +25,60 @@ function walk(dir) {
   return out;
 }
 
-function loadVault() {
-  return walk(VAULT).map((p) => parseNode(readFileSync(p, "utf8")));
+function build() {
+  mkdirSync(join(ROOT, ".kim"), { recursive: true });
+  const nodes = walk(VAULT).map((p) => parseNode(readFileSync(p, "utf8")));
+  return buildDb(nodes, docName, DB);
+}
+
+// return an open db, rebuilding if the index is missing or older than the vault
+function getDb() {
+  const files = walk(VAULT);
+  const newest = Math.max(0, ...files.map((f) => statSync(f).mtimeMs));
+  if (existsSync(DB) && statSync(DB).mtimeMs >= newest) return new DatabaseSync(DB);
+  return build();
 }
 
 const [cmd, ...rest] = process.argv.slice(2);
-const nodes = loadVault();
-const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
-
-function printNode(n) {
-  console.log(`● ${n.id}  [${n.type}/${n.namespace}]  conf=${n.confidence ?? "?"}`);
-  console.log(`  title: ${n.title}`);
-  console.log(`  doc:   ${docName(n)}`);
-  if (n.summary) console.log(`  summary: ${n.summary}`);
-  for (const e of n.edges || []) console.log(`  → ${e.type}(${e.weight ?? "?"}) ${e.target}  ${e.note || ""}`);
-  const backlinks = nodes.filter((m) => (m.edges || []).some((e) => e.target === n.id)).map((m) => m.id);
-  if (backlinks.length) console.log(`  ← backlinks: ${backlinks.join(", ")}`);
-}
 
 switch (cmd) {
-  case "list":
-    for (const n of nodes) console.log(`${n.no}\t${n.type}\t${n.id}\t${n.title}`);
+  case "build": {
+    build();
+    console.log(`built ${DB}`);
     break;
-  case "search":
-    for (const r of searchNodes(nodes, rest.join(" "))) console.log(`${r.score}\t${r.id}\t${r.title}`);
+  }
+  case "list": {
+    const db = getDb();
+    for (const r of db.prepare(`SELECT no, type, id, title FROM nodes ORDER BY no`).all())
+      console.log(`${r.no}\t${r.type}\t${r.id}\t${r.title}`);
     break;
+  }
+  case "search": {
+    for (const r of search(getDb(), rest.join(" "))) console.log(`${r.score}\t${r.id}\t${r.title}`);
+    break;
+  }
   case "node": {
-    const n = byId[rest[0]];
+    const db = getDb();
+    const n = db.prepare(`SELECT * FROM nodes WHERE id = ?`).get(rest[0]);
     if (!n) { console.error(`no such node: ${rest[0]}`); process.exit(1); }
-    printNode(n);
+    console.log(`● ${n.id}  [${n.type}/${n.namespace}]  conf=${n.confidence ?? "?"}`);
+    console.log(`  title: ${n.title}`);
+    console.log(`  doc:   ${n.doc_name}`);
+    if (n.summary) console.log(`  summary: ${n.summary}`);
+    for (const e of db.prepare(`SELECT * FROM edges WHERE src = ? ORDER BY target`).all(n.id))
+      console.log(`  → ${e.type}(${e.weight ?? "?"}) ${e.target}  ${e.note || ""}`);
+    const back = db.prepare(`SELECT src FROM edges WHERE target = ? ORDER BY src`).all(n.id).map((r) => r.src);
+    if (back.length) console.log(`  ← backlinks: ${back.join(", ")}`);
     break;
   }
   case "neighbors": {
     const di = rest.indexOf("--depth");
     const depth = di >= 0 ? Number(rest[di + 1]) : 1;
-    const ids = neighbors(nodes, rest[0], depth);
-    for (const id of ids) console.log(`${id}\t${byId[id]?.title ?? "?"}`);
+    for (const r of neighbors(getDb(), rest[0], depth)) console.log(`${r.id}\t${r.title ?? "?"}`);
     break;
   }
   case "health": {
-    const h = health(nodes);
-    console.log(`nodes: ${nodes.length}`);
+    const h = health(getDb());
     console.log(`orphans (${h.orphans.length}): ${h.orphans.join(", ") || "—"}`);
     console.log(`low confidence <0.5 (${h.lowConfidence.length}): ${h.lowConfidence.join(", ") || "—"}`);
     console.log(`empty summary (${h.emptySummary.length}): ${h.emptySummary.join(", ") || "—"}`);
@@ -72,6 +86,6 @@ switch (cmd) {
     break;
   }
   default:
-    console.log("usage: kim.mjs <list|search|node|neighbors|health> ...");
+    console.log("usage: kim.mjs <build|list|search|node|neighbors|health> ...");
     process.exit(cmd ? 1 : 0);
 }
