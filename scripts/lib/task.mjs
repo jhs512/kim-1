@@ -28,8 +28,11 @@ function section(lines, header) {
 export function parseTask({ summary = "", description = "" }) {
   const m = summary.match(STATE_RE);
   const state = m ? m[1] : "대기";
-  // strip leading icon + [state] token from title
-  const title = summary.replace(STATE_RE, "").replace(new RegExp(`^\\s*[${Object.values(ICONS).join("")}]?\\s*`), "").trim();
+  // title = everything after the `[상태]` token (icon precedes it) — avoids splitting
+  // non-BMP emoji surrogate pairs. Falls back to the whole summary when no token.
+  const title = m
+    ? summary.slice(summary.indexOf(m[0]) + m[0].length).trim()
+    : summary.trim();
 
   const lines = description.split(/\r?\n/);
   const request = section(lines, "요청:").join("\n").trim();

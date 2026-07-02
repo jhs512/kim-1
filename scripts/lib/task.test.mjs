@@ -16,6 +16,12 @@ test("parseTask extracts state, title, request, needInfo, history", () => {
   assert.deepEqual(t.history, [{ at: "2026-07-02T09:00", state: "대기", note: "등록" }]);
 });
 
+test("parseTask handles the non-BMP 작업중 icon (🔄) without leaving a broken surrogate", () => {
+  const t = parseTask({ summary: "🔄[작업중] 테스트 작업", description: "요청:\n\n필요정보:\n\n이력:\n- x [작업중] y" });
+  assert.equal(t.title, "테스트 작업"); // no orphan surrogate, no leading icon
+  assert.ok(!/[\uD800-\uDFFF]/.test(t.title)); // title carries no surrogate fragment from the icon
+});
+
 test("renderTask round-trips through parseTask", () => {
   const t = parseTask(EV);
   assert.deepEqual(parseTask(renderTask(t)), t);
